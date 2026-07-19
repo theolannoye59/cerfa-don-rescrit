@@ -1,0 +1,370 @@
+:root {
+  --ink: #1a2332;
+  --muted: #5c6b7a;
+  --paper: #f7f4ef;
+  --panel: #ffffff;
+  --line: #d5d0c8;
+  --navy: #0b1f3a;
+  --accent: #b42318;
+  --focus: #2f5d8c;
+  --shadow: 0 18px 50px rgba(11, 31, 58, 0.08);
+  --radius: 14px;
+  --font: "DM Sans", "Avenir Next", sans-serif;
+  --display: "Instrument Serif", "Times New Roman", serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(47, 93, 140, 0.12), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(180, 35, 24, 0.08), transparent 55%),
+    linear-gradient(180deg, #efeae2 0%, var(--paper) 40%, #ebe6dc 100%);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+body {
+  padding: 2.5rem 1.25rem 4rem;
+}
+
+.page {
+  width: min(760px, 100%);
+  margin: 0 auto;
+}
+
+.hero {
+  margin-bottom: 1.75rem;
+  padding: 0.5rem 0.25rem 0.25rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.6rem;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin: 0;
+  color: var(--navy);
+  font-family: var(--display);
+  font-size: clamp(2.6rem, 7vw, 3.6rem);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+
+.lede {
+  max-width: 36rem;
+  margin: 0.9rem 0 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.panel {
+  margin-bottom: 1rem;
+  padding: 1.35rem 1.4rem 1.5rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.panel h2 {
+  margin: 0 0 1rem;
+  color: var(--navy);
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem 0.9rem;
+}
+
+.span-2 {
+  grid-column: 1 / -1;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fcfcfb;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.95rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 4.5rem;
+}
+
+.field input:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px rgba(47, 93, 140, 0.15);
+}
+
+.field input[readonly] {
+  background: #f1eee8;
+  color: var(--muted);
+}
+
+.choices {
+  margin: 1.1rem 0 0;
+  padding: 0.9rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.choices.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 1rem;
+}
+
+.choices legend {
+  padding: 0;
+  margin-bottom: 0.7rem;
+  color: var(--navy);
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
+.choice {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  margin: 0 0 0.45rem;
+  color: var(--ink);
+  font-size: 0.92rem;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.choice.compact {
+  margin-bottom: 0.25rem;
+}
+
+.choice input {
+  margin-top: 0.2rem;
+  accent-color: var(--navy);
+}
+
+.subchoices {
+  margin: 0.15rem 0 0.7rem 1.4rem;
+  padding: 0.55rem 0.7rem;
+  border-left: 2px solid #d9e2ec;
+  background: linear-gradient(90deg, rgba(47, 93, 140, 0.04), transparent);
+  border-radius: 0 10px 10px 0;
+}
+
+.nested {
+  margin: 0.45rem 0 0.65rem 1.4rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
+button {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.15s ease, opacity 0.15s ease;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.primary {
+  padding: 0.85rem 1.35rem;
+  background: var(--navy);
+  color: #fff;
+}
+
+.primary:hover {
+  background: #163356;
+}
+
+.ghost {
+  padding: 0.85rem 1.1rem;
+  background: transparent;
+  color: var(--navy);
+  border: 1px solid var(--line);
+}
+
+.ghost:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.hint {
+  min-height: 1.4rem;
+  margin: 0.85rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+.hint.error {
+  color: var(--accent);
+}
+
+.hint.ok {
+  color: #1f6b3a;
+}
+
+.org-badge {
+  margin: -0.35rem 0 0.9rem;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.org-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.org-summary .span-2 {
+  grid-column: 1 / -1;
+}
+
+.org-summary dt {
+  margin: 0 0 0.2rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.org-summary dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.receipt-field {
+  max-width: 16rem;
+}
+
+.signature-block {
+  margin-top: 1.15rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.signature-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+  color: var(--navy);
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
+#signature-pad {
+  display: block;
+  width: 100%;
+  height: 180px;
+  border: 1.5px dashed #b8c0ca;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, #fcfcfb 0%, #f4f1eb 100%);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.signature-hint {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+button.compact {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.82rem;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  body {
+    padding: 1.5rem 0.9rem 3rem;
+  }
+
+  .grid-2,
+  .org-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    padding: 1.1rem;
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+  }
+
+  .actions button {
+    width: 100%;
+  }
+
+  .hint {
+    text-align: left;
+  }
+
+  #signature-pad {
+    height: 160px;
+  }
+}

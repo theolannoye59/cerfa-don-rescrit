@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reçu fiscal CERFA 2041-RD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="template-base64.js"></script>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <p class="eyebrow">CERFA n°11580*05 · 2041-RD</p>
+      <h1>Reçu fiscal</h1>
+      <p class="lede">
+        Complétez le reçu fiscal Echo Symphonic, signez, puis téléchargez le CERFA prêt à envoyer.
+      </p>
+    </header>
+
+    <form id="cerfa-form" autocomplete="on">
+      <section class="panel">
+        <h2>Organisme bénéficiaire</h2>
+        <p class="org-badge">Prérempli Echo Symphonic — modifiable si besoin</p>
+        <div class="grid-2">
+          <label class="field span-2">
+            <span>Nom ou dénomination</span>
+            <input name="orgName" required value="Echo Symphonic" />
+          </label>
+          <label class="field">
+            <span>N° SIREN ou RNA</span>
+            <input name="orgSiren" value="924 601 198" />
+          </label>
+          <label class="field">
+            <span>N° d’ordre du reçu</span>
+            <input name="receiptNumber" required value="DON2026001" placeholder="DON2026002" />
+          </label>
+          <label class="field">
+            <span>N°</span>
+            <input name="orgStreetNumber" value="36" />
+          </label>
+          <label class="field">
+            <span>Rue</span>
+            <input name="orgStreet" value="Avenue de Bretagne" />
+          </label>
+          <label class="field">
+            <span>Code postal</span>
+            <input name="orgPostal" value="59000" />
+          </label>
+          <label class="field">
+            <span>Commune</span>
+            <input name="orgCity" value="Lille" />
+          </label>
+          <label class="field">
+            <span>Pays</span>
+            <input name="orgCountry" value="France" />
+          </label>
+          <label class="field span-2">
+            <span>Objet</span>
+            <textarea name="orgObject" rows="3">réunir des musiciens amateurs en pratique collective ; rendre la musique accessible et la faire rayonner au public le plus large possible ; exercer dans un intérêt général à but non lucratif avec une gestion désintéressée et sans fonction en cercle restreint</textarea>
+          </label>
+        </div>
+
+        <fieldset class="choices">
+          <legend>Catégorie de l’organisme</legend>
+          <label class="choice">
+            <input type="radio" name="orgCategory" value="oeuvre" checked />
+            <span>Œuvre ou organisme d’intérêt général</span>
+          </label>
+          <div class="subchoices" data-show-when="oeuvre">
+            <label class="choice compact">
+              <input type="radio" name="orgSubtype" value="asso1901" checked />
+              <span>Association loi 1901</span>
+            </label>
+            <label class="choice compact">
+              <input type="radio" name="orgSubtype" value="rup" />
+              <span>Association / fondation reconnue d’utilité publique</span>
+            </label>
+            <label class="choice compact">
+              <input type="radio" name="orgSubtype" value="fondationUniv" />
+              <span>Fondation universitaire ou partenariale</span>
+            </label>
+            <label class="choice compact">
+              <input type="radio" name="orgSubtype" value="fondationEntreprise" />
+              <span>Fondation d’entreprise</span>
+            </label>
+            <label class="choice compact">
+              <input type="radio" name="orgSubtype" value="musee" />
+              <span>Musée de France</span>
+            </label>
+            <label class="choice compact">
+              <input type="radio" name="orgSubtype" value="aide" />
+              <span>Aide alimentaire, soins ou logement</span>
+            </label>
+            <label class="choice compact">
+              <input type="radio" name="orgSubtype" value="foret" />
+              <span>Communes / syndicats forestiers</span>
+            </label>
+            <label class="choice compact">
+              <input type="radio" name="orgSubtype" value="autres" />
+              <span>Autres</span>
+            </label>
+            <label class="field nested" data-show-when-subtype="autres">
+              <span>Précisez</span>
+              <input name="orgAutresPrecisions" />
+            </label>
+          </div>
+          <label class="choice">
+            <input type="radio" name="orgCategory" value="fonds" />
+            <span>Fonds de dotation</span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="orgCategory" value="enseignement" />
+            <span>Établissement d’enseignement supérieur ou artistique</span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="orgCategory" value="spectacle" />
+            <span>Organisme de spectacle / art contemporain</span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="orgCategory" value="recherche" />
+            <span>Établissement de recherche</span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="orgCategory" value="autresCat" />
+            <span>Autre catégorie (cocher manuellement sur le PDF si besoin)</span>
+          </label>
+        </fieldset>
+      </section>
+
+      <section class="panel">
+        <h2>Donateur</h2>
+        <div class="grid-2">
+          <label class="field">
+            <span>Nom</span>
+            <input name="donorLastName" required placeholder="Dupont" />
+          </label>
+          <label class="field">
+            <span>Prénoms</span>
+            <input name="donorFirstName" required placeholder="Camille" />
+          </label>
+          <label class="field">
+            <span>N°</span>
+            <input name="donorStreetNumber" placeholder="8" />
+          </label>
+          <label class="field">
+            <span>Rue</span>
+            <input name="donorStreet" placeholder="avenue Victor Hugo" />
+          </label>
+          <label class="field">
+            <span>Code postal</span>
+            <input name="donorPostal" placeholder="69003" />
+          </label>
+          <label class="field">
+            <span>Commune</span>
+            <input name="donorCity" placeholder="Lyon" />
+          </label>
+          <label class="field">
+            <span>Pays</span>
+            <input name="donorCountry" value="France" />
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Don</h2>
+        <div class="grid-2">
+          <label class="field">
+            <span>Montant (€)</span>
+            <input name="amount" type="number" min="0" step="0.01" required placeholder="100" />
+          </label>
+          <label class="field">
+            <span>Somme en toutes lettres</span>
+            <input name="amountWords" readonly placeholder="Rempli automatiquement" />
+          </label>
+          <label class="field">
+            <span>Date du versement</span>
+            <input name="donationDate" type="date" required />
+          </label>
+          <label class="field">
+            <span>Date de signature</span>
+            <input name="signatureDate" type="date" required />
+          </label>
+        </div>
+
+        <fieldset class="choices row">
+          <legend>Article ouvrant droit à réduction</legend>
+          <label class="choice compact">
+            <input type="checkbox" name="article200" checked />
+            <span>200 du CGI (IR)</span>
+          </label>
+          <label class="choice compact">
+            <input type="checkbox" name="article978" />
+            <span>978 du CGI (IFI)</span>
+          </label>
+        </fieldset>
+
+        <fieldset class="choices row">
+          <legend>Forme du don</legend>
+          <label class="choice compact">
+            <input type="radio" name="donationForm" value="authentique" />
+            <span>Acte authentique</span>
+          </label>
+          <label class="choice compact">
+            <input type="radio" name="donationForm" value="seing" />
+            <span>Acte sous seing privé</span>
+          </label>
+          <label class="choice compact">
+            <input type="radio" name="donationForm" value="manuel" checked />
+            <span>Déclaration de don manuel</span>
+          </label>
+          <label class="choice compact">
+            <input type="radio" name="donationForm" value="autres" />
+            <span>Autres</span>
+          </label>
+        </fieldset>
+
+        <fieldset class="choices row">
+          <legend>Nature du don</legend>
+          <label class="choice compact">
+            <input type="radio" name="donationNature" value="numeraire" checked />
+            <span>Numéraire</span>
+          </label>
+          <label class="choice compact">
+            <input type="radio" name="donationNature" value="titres" />
+            <span>Titres cotés</span>
+          </label>
+          <label class="choice compact">
+            <input type="radio" name="donationNature" value="abandon" />
+            <span>Abandon de revenus</span>
+          </label>
+          <label class="choice compact">
+            <input type="radio" name="donationNature" value="frais" />
+            <span>Frais de bénévoles</span>
+          </label>
+          <label class="choice compact">
+            <input type="radio" name="donationNature" value="autres" />
+            <span>Autres</span>
+          </label>
+          <label class="field nested span-row" data-show-when-nature="autres">
+            <span>Précisez</span>
+            <input name="natureAutres" placeholder="Don en nature…" />
+          </label>
+        </fieldset>
+
+        <fieldset class="choices row" data-show-when-nature-block="numeraire">
+          <legend>Mode de versement</legend>
+          <label class="choice compact">
+            <input type="radio" name="paymentMode" value="especes" />
+            <span>Espèces</span>
+          </label>
+          <label class="choice compact">
+            <input type="radio" name="paymentMode" value="cheque" />
+            <span>Chèque</span>
+          </label>
+          <label class="choice compact">
+            <input type="radio" name="paymentMode" value="virement" checked />
+            <span>Virement / prélèvement / CB</span>
+          </label>
+        </fieldset>
+
+        <div class="signature-block">
+          <div class="signature-head">
+            <span>Signature</span>
+            <button type="button" class="ghost compact" id="clear-signature">Effacer</button>
+          </div>
+          <canvas
+            id="signature-pad"
+            width="640"
+            height="200"
+            aria-label="Zone de signature à la souris"
+          ></canvas>
+          <p class="signature-hint">Dessinez la signature dans le cadre (souris ou doigt).</p>
+        </div>
+      </section>
+
+      <div class="actions">
+        <button type="submit" class="primary" id="generate">Télécharger le CERFA complété</button>
+      </div>
+      <p class="hint" id="status" role="status"></p>
+    </form>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

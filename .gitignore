@@ -1,0 +1,8 @@
+.DS_Store
+node_modules/
+*.log
+test-*.pdf
+test-*.png
+verify-*.png
+preview-*.png
+clip-*.png
