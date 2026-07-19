@@ -38,6 +38,82 @@ body {
   padding: 2.25rem 1.25rem 4rem;
 }
 
+body:not(.is-authenticated) {
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-gate {
+  width: min(420px, calc(100% - 2rem));
+  margin: 2rem auto;
+}
+
+.auth-card {
+  margin: 0;
+  text-align: center;
+}
+
+.auth-logo {
+  display: block;
+  width: min(260px, 70%);
+  height: auto;
+  margin: 0 auto 0.75rem;
+}
+
+.auth-title {
+  margin: 1rem 0 0.4rem;
+  font-family: var(--display);
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.auth-title::after {
+  content: "";
+  display: block;
+  width: 2.2rem;
+  height: 0.28rem;
+  margin: 0.55rem auto 0;
+  background: var(--ochre);
+  border-radius: 999px;
+}
+
+.auth-lede {
+  margin: 0.85rem 0 1.25rem;
+  color: var(--muted);
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
+.auth-card .field {
+  text-align: left;
+}
+
+.auth-submit {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.auth-error {
+  text-align: left;
+  margin: 0.65rem 0 0;
+}
+
+.hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.hero-top .eyebrow {
+  margin: 0;
+}
+
 .page {
   width: min(760px, 100%);
   margin: 0 auto;

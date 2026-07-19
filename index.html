@@ -8,11 +8,40 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Livvic:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
-  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-  <script src="template-base64.js"></script>
 </head>
 <body>
-  <div class="page">
+  <div id="auth-gate" class="auth-gate">
+    <div class="auth-card panel">
+      <img
+        class="auth-logo"
+        src="assets/logo-echo-symphonic-web.png"
+        alt="Echo Symphonic"
+        width="280"
+        height="110"
+      />
+      <p class="brand-tag">L’orchestre qui crée du lien</p>
+      <h1 class="auth-title">Accès sécurisé</h1>
+      <p class="auth-lede">Saisissez le mot de passe pour ouvrir le générateur de reçus fiscaux.</p>
+      <form id="auth-form" autocomplete="current-password">
+        <label class="field">
+          <span>Mot de passe</span>
+          <input
+            id="auth-password"
+            name="password"
+            type="password"
+            required
+            autofocus
+            autocomplete="current-password"
+            placeholder="••••••••"
+          />
+        </label>
+        <p id="auth-error" class="hint error auth-error" hidden role="alert"></p>
+        <button type="submit" class="primary auth-submit">Entrer</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="app" class="page" hidden>
     <header class="hero">
       <div class="brand">
         <img
@@ -23,7 +52,10 @@
         />
         <p class="brand-tag">L’orchestre qui crée du lien</p>
       </div>
-      <p class="eyebrow">CERFA n°11580*05 · 2041-RD</p>
+      <div class="hero-top">
+        <p class="eyebrow">CERFA n°11580*05 · 2041-RD</p>
+        <button type="button" class="ghost compact" id="logout-btn">Déconnexion</button>
+      </div>
       <h1>Reçu fiscal</h1>
       <p class="lede">
         Complétez le reçu fiscal Echo Symphonic, signez, puis téléchargez le CERFA prêt à envoyer.
@@ -297,6 +329,8 @@
       · Reçu fiscal CERFA 2041-RD
     </footer>
   </div>
-  <script src="app.js"></script>
+
+  <script src="auth-config.js"></script>
+  <script src="auth.js"></script>
 </body>
 </html>
