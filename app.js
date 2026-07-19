@@ -264,7 +264,7 @@ function moveSignature(event) {
   signatureCtx.lineWidth = 2.4;
   signatureCtx.lineCap = "round";
   signatureCtx.lineJoin = "round";
-  signatureCtx.strokeStyle = "#0b1f3a";
+  signatureCtx.strokeStyle = "#1e1e1c";
   signatureCtx.lineTo(x, y);
   signatureCtx.stroke();
   signatureCtx.beginPath();
