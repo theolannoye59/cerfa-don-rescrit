@@ -10,6 +10,8 @@ import {
   sendJson,
   readBody,
   getParentFolderId,
+  assertParentFolderAccessible,
+  DRIVE_BUILD,
 } from "../lib/drive.js";
 
 void process.env.GOOGLE_CLIENT_ID;
@@ -37,7 +39,7 @@ export default async function handler(req, res) {
 
   try {
     assertAuthorized(req);
-    getParentFolderId();
+    const parentFolderId = getParentFolderId();
 
     const receiptNumber = String(req.headers["x-receipt-number"] || "").trim();
     if (!/^DON\d{7}$/i.test(receiptNumber)) {
@@ -65,6 +67,7 @@ export default async function handler(req, res) {
     }
 
     const drive = getDrive();
+    await assertParentFolderAccessible(drive);
     const folder = await ensureYearFolder(drive, year || currentYear());
     const existing = await listDonFiles(drive, folder.id, year);
     const clash = existing.find(
@@ -100,11 +103,15 @@ export default async function handler(req, res) {
       fileId: file.id,
       fileName: file.name,
       webViewLink: file.webViewLink || null,
+      parentFolderId,
+      build: DRIVE_BUILD,
     });
   } catch (err) {
     console.error(err);
     sendJson(res, err.statusCode || 500, {
       error: err.message || "Erreur lors de l’upload Drive",
+      parentFolderId: getParentFolderId(),
+      build: DRIVE_BUILD,
     });
   }
 }

@@ -6,6 +6,7 @@ import {
   sendJson,
   getQuery,
   getParentFolderId,
+  DRIVE_BUILD,
 } from "../lib/drive.js";
 
 // Références statiques pour que Vercel injecte bien ces env vars dans la function
@@ -28,8 +29,7 @@ export default async function handler(req, res) {
 
   try {
     assertAuthorized(req);
-    // Valide tôt → message clair si l’ID parent est vide / invalide
-    getParentFolderId();
+    const parentFolderId = getParentFolderId();
 
     const query = getQuery(req);
     const yearParam = query.year;
@@ -39,11 +39,13 @@ export default async function handler(req, res) {
         : currentYear();
     const drive = getDrive();
     const result = await nextReceiptNumber(drive, year);
-    sendJson(res, 200, result);
+    sendJson(res, 200, { ...result, parentFolderId, build: DRIVE_BUILD });
   } catch (err) {
     console.error(err);
     sendJson(res, err.statusCode || 500, {
       error: err.message || "Erreur lors du calcul du numéro",
+      parentFolderId: getParentFolderId(),
+      build: DRIVE_BUILD,
     });
   }
 }
