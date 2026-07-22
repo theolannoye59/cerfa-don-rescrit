@@ -600,6 +600,60 @@ function downloadBlob(bytes, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
+function authHeaders(extra = {}) {
+  const hash = window.AUTH_CONFIG?.passwordHash;
+  if (!hash) throw new Error("Configuration d’accès manquante.");
+  return {
+    Authorization: `Bearer ${hash}`,
+    ...extra,
+  };
+}
+
+async function fetchNextReceiptNumber(year) {
+  const qs = year ? `?year=${encodeURIComponent(year)}` : "";
+  const res = await fetch(`/api/next-receipt${qs}`, {
+    method: "GET",
+    headers: authHeaders(),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(body.error || `Impossible d’obtenir le n° de reçu (${res.status})`);
+  }
+  return body.receiptNumber;
+}
+
+async function uploadRescritToDrive(bytes, receiptNumber) {
+  const res = await fetch("/api/upload-rescrit", {
+    method: "POST",
+    headers: authHeaders({
+      "Content-Type": "application/pdf",
+      "X-Receipt-Number": receiptNumber,
+    }),
+    body: bytes,
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(body.error || `Upload Drive échoué (${res.status})`);
+    err.status = res.status;
+    err.payload = body;
+    throw err;
+  }
+  return body;
+}
+
+async function allocateAndBuildPdf() {
+  const year = (form.elements.donationDate.value || todayISO()).slice(0, 4);
+  setStatus("Attribution du n° de reçu…");
+  const receiptNumber = await fetchNextReceiptNumber(year);
+  form.elements.receiptNumber.value = receiptNumber;
+
+  syncAmountWords();
+  const data = collectFormData();
+  setStatus(`Génération du PDF ${receiptNumber}…`);
+  const bytes = await fillPdf(data);
+  return { receiptNumber, bytes };
+}
+
 /* ---------- Init ---------- */
 
 form.addEventListener("change", updateVisibility);
@@ -631,15 +685,36 @@ form.addEventListener("submit", async (e) => {
 
   const btn = $("#generate");
   btn.disabled = true;
-  setStatus("Génération du PDF…");
 
   try {
-    syncAmountWords();
-    const data = collectFormData();
-    const bytes = await fillPdf(data);
-    const order = (data.receiptNumber || "CERFA").replace(/[^\w.-]+/g, "_");
-    downloadBlob(bytes, `${order}.pdf`);
-    setStatus("PDF téléchargé — prêt à envoyer.", "ok");
+    let { receiptNumber, bytes } = await allocateAndBuildPdf();
+
+    downloadBlob(bytes, `${receiptNumber}.pdf`);
+    setStatus(`PDF téléchargé (${receiptNumber}). Envoi vers Google Drive…`);
+
+    try {
+      const uploaded = await uploadRescritToDrive(bytes, receiptNumber);
+      setStatus(
+        `PDF téléchargé et enregistré sur Drive : ${uploaded.fileName || `${receiptNumber}.pdf`}`,
+        "ok"
+      );
+    } catch (uploadErr) {
+      // Collision rare : un autre reçu a pris le numéro entre-temps → un seul retry
+      if (uploadErr.status === 409 && uploadErr.payload?.receiptNumber) {
+        receiptNumber = uploadErr.payload.receiptNumber;
+        form.elements.receiptNumber.value = receiptNumber;
+        syncAmountWords();
+        bytes = await fillPdf(collectFormData());
+        downloadBlob(bytes, `${receiptNumber}.pdf`);
+        const uploaded = await uploadRescritToDrive(bytes, receiptNumber);
+        setStatus(
+          `PDF enregistré sur Drive après renumérotation : ${uploaded.fileName || receiptNumber}.pdf`,
+          "ok"
+        );
+      } else {
+        throw uploadErr;
+      }
+    }
   } catch (err) {
     console.error(err);
     setStatus(err.message || "Erreur lors de la génération.", "error");
@@ -654,3 +729,4 @@ syncAmountWords();
 
 if (!form.elements.donationDate.value) form.elements.donationDate.value = todayISO();
 if (!form.elements.signatureDate.value) form.elements.signatureDate.value = todayISO();
+form.elements.receiptNumber.value = "";

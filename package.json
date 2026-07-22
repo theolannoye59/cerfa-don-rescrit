@@ -1,0 +1,15 @@
+{
+  "name": "cerfa-don-rescrit",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "google:token": "node scripts/get-google-refresh-token.mjs"
+  },
+  "dependencies": {
+    "googleapis": "^148.0.0"
+  },
+  "devDependencies": {
+    "vercel": "^44.0.0"
+  }
+}

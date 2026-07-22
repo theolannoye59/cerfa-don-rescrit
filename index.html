@@ -58,7 +58,8 @@
       </div>
       <h1>Reçu fiscal</h1>
       <p class="lede">
-        Complétez le reçu fiscal Echo Symphonic, signez, puis téléchargez le CERFA prêt à envoyer.
+        Complétez le reçu fiscal Echo Symphonic, signez, puis générez le CERFA :
+        téléchargement local et enregistrement automatique sur Google Drive.
       </p>
     </header>
 
@@ -77,7 +78,12 @@
           </label>
           <label class="field">
             <span>N° d’ordre du reçu</span>
-            <input name="receiptNumber" required value="DON2026001" placeholder="DON2026002" />
+            <input
+              name="receiptNumber"
+              readonly
+              value=""
+              title="Attribué automatiquement à la génération (DONYYYYXXX)"
+            />
           </label>
           <label class="field">
             <span>N°</span>
@@ -177,27 +183,27 @@
         <div class="grid-2">
           <label class="field">
             <span>Nom</span>
-            <input name="donorLastName" required placeholder="Dupont" />
+            <input name="donorLastName" required />
           </label>
           <label class="field">
             <span>Prénoms</span>
-            <input name="donorFirstName" required placeholder="Camille" />
+            <input name="donorFirstName" required />
           </label>
           <label class="field">
             <span>N°</span>
-            <input name="donorStreetNumber" placeholder="8" />
+            <input name="donorStreetNumber" />
           </label>
           <label class="field">
             <span>Rue</span>
-            <input name="donorStreet" placeholder="avenue Victor Hugo" />
+            <input name="donorStreet" />
           </label>
           <label class="field">
             <span>Code postal</span>
-            <input name="donorPostal" placeholder="69003" />
+            <input name="donorPostal" />
           </label>
           <label class="field">
             <span>Commune</span>
-            <input name="donorCity" placeholder="Lyon" />
+            <input name="donorCity" />
           </label>
           <label class="field">
             <span>Pays</span>
@@ -211,11 +217,11 @@
         <div class="grid-2">
           <label class="field">
             <span>Montant (€)</span>
-            <input name="amount" type="number" min="0" step="0.01" required placeholder="100" />
+            <input name="amount" type="number" min="0" step="0.01" required />
           </label>
           <label class="field">
             <span>Somme en toutes lettres</span>
-            <input name="amountWords" readonly placeholder="Rempli automatiquement" />
+            <input name="amountWords" readonly />
           </label>
           <label class="field">
             <span>Date du versement</span>
@@ -283,7 +289,7 @@
           </label>
           <label class="field nested span-row" data-show-when-nature="autres">
             <span>Précisez</span>
-            <input name="natureAutres" placeholder="Don en nature…" />
+            <input name="natureAutres" />
           </label>
         </fieldset>
 
@@ -319,7 +325,7 @@
       </section>
 
       <div class="actions">
-        <button type="submit" class="primary" id="generate">Télécharger le CERFA complété</button>
+        <button type="submit" class="primary" id="generate">Générer, télécharger et enregistrer sur Drive</button>
       </div>
       <p class="hint" id="status" role="status"></p>
     </form>
