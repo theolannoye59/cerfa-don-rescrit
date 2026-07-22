@@ -8,14 +8,14 @@ import {
   getParentFolderId,
   DRIVE_BUILD,
 } from "../lib/drive.js";
+import { clearGoogleSessionCookies } from "../lib/google-auth.js";
 
-// Références statiques pour que Vercel injecte bien ces env vars dans la function
 void process.env.GOOGLE_CLIENT_ID;
 void process.env.GOOGLE_CLIENT_SECRET;
-void process.env.GOOGLE_REFRESH_TOKEN;
 void process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID;
 void process.env.GOOGLE_DRIVE_YEAR_FOLDER_ID;
 void process.env.AUTH_PASSWORD_HASH;
+void process.env.SESSION_SECRET;
 
 export default async function handler(req, res) {
   if (req.method === "OPTIONS") {
@@ -43,9 +43,13 @@ export default async function handler(req, res) {
     sendJson(res, 200, { ...result, parentFolderId, build: DRIVE_BUILD });
   } catch (err) {
     console.error(err);
+    if (err.code === "GOOGLE_REAUTH_REQUIRED" || err.code === "GOOGLE_NOT_CONNECTED") {
+      clearGoogleSessionCookies(res);
+    }
     sendJson(res, err.statusCode || 500, {
       error: err.message || "Erreur lors du calcul du numéro",
       code: err.code || undefined,
+      detail: err.detail || undefined,
       parentFolderId: getParentFolderId(),
       build: DRIVE_BUILD,
     });

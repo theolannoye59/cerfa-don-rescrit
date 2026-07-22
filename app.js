@@ -618,12 +618,12 @@ async function fetchNextReceiptNumber(year) {
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    if (body.code === "GOOGLE_NOT_CONNECTED" || res.status === 401) {
-      throw new Error(
-        body.error || "Connectez Google Drive avec un compte qui a les droits sur le dossier."
-      );
-    }
-    throw new Error(body.error || `Impossible d’obtenir le n° de reçu (${res.status})`);
+    const err = new Error(
+      body.error || `Impossible d’obtenir le n° de reçu (${res.status})`
+    );
+    err.status = res.status;
+    err.code = body.code;
+    throw err;
   }
   return body.receiptNumber;
 }
@@ -642,6 +642,7 @@ async function uploadRescritToDrive(bytes, receiptNumber) {
   if (!res.ok) {
     const err = new Error(body.error || `Upload Drive échoué (${res.status})`);
     err.status = res.status;
+    err.code = body.code;
     err.payload = body;
     throw err;
   }
@@ -656,6 +657,12 @@ async function isGoogleConnected() {
   } catch {
     return false;
   }
+}
+
+async function clearGoogleSession() {
+  try {
+    await fetch("/api/auth/google/logout", { method: "POST", credentials: "include" });
+  } catch (_) {}
 }
 
 function connectGoogleViaPopup() {
@@ -673,7 +680,7 @@ function connectGoogleViaPopup() {
     if (!popup) {
       reject(
         new Error(
-          "Autorisez les fenêtres pop-up pour connecter Google Drive, puis relancez la génération."
+          "Autorisez les fenêtres pop-up pour connecter Google Drive, puis réessayez."
         )
       );
       return;
@@ -702,19 +709,31 @@ function connectGoogleViaPopup() {
 
     const poll = setInterval(async () => {
       if (!popup.closed) return;
-      // L’utilisateur a fermé la popup : vérifier si le cookie est quand même posé
       const ok = await isGoogleConnected();
       finish(ok, ok ? null : "Connexion Google non terminée.");
     }, 600);
   });
 }
 
-async function ensureGoogleConnected() {
-  if (await isGoogleConnected()) return true;
+async function ensureGoogleConnected({ force } = {}) {
+  if (force) await clearGoogleSession();
+  if (!force && (await isGoogleConnected())) return true;
   setStatus("Connexion Google Drive requise…");
   await connectGoogleViaPopup();
   if (!(await isGoogleConnected())) {
     throw new Error("Google Drive n’est pas connecté.");
+  }
+  return true;
+}
+
+function validateBeforeGenerate() {
+  if (!form.elements.article200.checked && !form.elements.article978.checked) {
+    setStatus("Cochez au moins l’article 200 ou 978 du CGI.", "error");
+    return false;
+  }
+  if (!signatureHasInk) {
+    setStatus("Ajoutez une signature dans le cadre avant de générer.", "error");
+    return false;
   }
   return true;
 }
@@ -730,6 +749,96 @@ async function allocateAndBuildPdf() {
   setStatus(`Génération du PDF ${receiptNumber}…`);
   const bytes = await fillPdf(data);
   return { receiptNumber, bytes };
+}
+
+async function withGoogleDrive(action) {
+  await ensureGoogleConnected();
+  try {
+    return await action();
+  } catch (err) {
+    if (err.code === "GOOGLE_REAUTH_REQUIRED" || err.code === "GOOGLE_NOT_CONNECTED") {
+      setStatus("Reconnectez Google Drive…");
+      await ensureGoogleConnected({ force: true });
+      return action();
+    }
+    throw err;
+  }
+}
+
+async function handleDownloadOnly() {
+  if (!validateBeforeGenerate()) return;
+  const btn = $("#download-only");
+  const other = $("#save-drive");
+  btn.disabled = true;
+  other.disabled = true;
+  try {
+    // Téléchargement local : pas besoin de Google ni de n° Drive.
+    // N° provisoire local pour le PDF (le n° officiel est attribué à l’enregistrement Drive).
+    const year = (form.elements.donationDate.value || todayISO()).slice(0, 4);
+    let receiptNumber = form.elements.receiptNumber.value.trim();
+    if (!/^DON\d{7}$/i.test(receiptNumber)) {
+      const key = `cerfa-local-seq-${year}`;
+      const next = Number(localStorage.getItem(key) || "0") + 1;
+      localStorage.setItem(key, String(next));
+      receiptNumber = `DON${year}${String(next).padStart(3, "0")}`;
+      form.elements.receiptNumber.value = receiptNumber;
+    }
+    syncAmountWords();
+    setStatus(`Génération du PDF ${receiptNumber}…`);
+    const bytes = await fillPdf(collectFormData());
+    downloadBlob(bytes, `${receiptNumber}.pdf`);
+    setStatus(
+      `PDF téléchargé (${receiptNumber}). Astuce : l’enregistrement Drive attribuera le n° officiel.`,
+      "ok"
+    );
+  } catch (err) {
+    console.error(err);
+    setStatus(err.message || "Erreur lors du téléchargement.", "error");
+  } finally {
+    btn.disabled = false;
+    other.disabled = false;
+  }
+}
+
+async function handleSaveDrive() {
+  if (!validateBeforeGenerate()) return;
+  const btn = $("#save-drive");
+  const other = $("#download-only");
+  btn.disabled = true;
+  other.disabled = true;
+  try {
+    await withGoogleDrive(async () => {
+      let { receiptNumber, bytes } = await allocateAndBuildPdf();
+      setStatus(`Envoi vers Google Drive (${receiptNumber})…`);
+      try {
+        const uploaded = await uploadRescritToDrive(bytes, receiptNumber);
+        setStatus(
+          `Enregistré sur Drive : ${uploaded.fileName || `${receiptNumber}.pdf`}`,
+          "ok"
+        );
+      } catch (uploadErr) {
+        if (uploadErr.status === 409 && uploadErr.payload?.receiptNumber) {
+          receiptNumber = uploadErr.payload.receiptNumber;
+          form.elements.receiptNumber.value = receiptNumber;
+          syncAmountWords();
+          bytes = await fillPdf(collectFormData());
+          const uploaded = await uploadRescritToDrive(bytes, receiptNumber);
+          setStatus(
+            `Enregistré sur Drive après renumérotation : ${uploaded.fileName || receiptNumber}.pdf`,
+            "ok"
+          );
+        } else {
+          throw uploadErr;
+        }
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    setStatus(err.message || "Erreur lors de l’enregistrement Drive.", "error");
+  } finally {
+    btn.disabled = false;
+    other.disabled = false;
+  }
 }
 
 /* ---------- Init ---------- */
@@ -750,57 +859,9 @@ signatureCanvas.addEventListener("touchmove", moveSignature, { passive: false })
 signatureCanvas.addEventListener("touchend", endSignature);
 signatureCanvas.addEventListener("touchcancel", endSignature);
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (!form.elements.article200.checked && !form.elements.article978.checked) {
-    setStatus("Cochez au moins l’article 200 ou 978 du CGI.", "error");
-    return;
-  }
-  if (!signatureHasInk) {
-    setStatus("Ajoutez une signature dans le cadre avant de télécharger.", "error");
-    return;
-  }
-
-  const btn = $("#generate");
-  btn.disabled = true;
-
-  try {
-    await ensureGoogleConnected();
-    let { receiptNumber, bytes } = await allocateAndBuildPdf();
-
-    downloadBlob(bytes, `${receiptNumber}.pdf`);
-    setStatus(`PDF téléchargé (${receiptNumber}). Envoi vers Google Drive…`);
-
-    try {
-      const uploaded = await uploadRescritToDrive(bytes, receiptNumber);
-      setStatus(
-        `PDF téléchargé et enregistré sur Drive : ${uploaded.fileName || `${receiptNumber}.pdf`}`,
-        "ok"
-      );
-    } catch (uploadErr) {
-      // Collision rare : un autre reçu a pris le numéro entre-temps → un seul retry
-      if (uploadErr.status === 409 && uploadErr.payload?.receiptNumber) {
-        receiptNumber = uploadErr.payload.receiptNumber;
-        form.elements.receiptNumber.value = receiptNumber;
-        syncAmountWords();
-        bytes = await fillPdf(collectFormData());
-        downloadBlob(bytes, `${receiptNumber}.pdf`);
-        const uploaded = await uploadRescritToDrive(bytes, receiptNumber);
-        setStatus(
-          `PDF enregistré sur Drive après renumérotation : ${uploaded.fileName || receiptNumber}.pdf`,
-          "ok"
-        );
-      } else {
-        throw uploadErr;
-      }
-    }
-  } catch (err) {
-    console.error(err);
-    setStatus(err.message || "Erreur lors de la génération.", "error");
-  } finally {
-    btn.disabled = false;
-  }
-});
+form.addEventListener("submit", (e) => e.preventDefault());
+$("#download-only").addEventListener("click", handleDownloadOnly);
+$("#save-drive").addEventListener("click", handleSaveDrive);
 
 clearSignature();
 updateVisibility();
