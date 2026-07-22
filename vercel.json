@@ -8,6 +8,10 @@
     "api/upload-rescrit.js": {
       "memory": 1024,
       "maxDuration": 30
+    },
+    "api/auth/google/*.js": {
+      "memory": 512,
+      "maxDuration": 20
     }
   }
 }

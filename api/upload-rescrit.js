@@ -66,7 +66,7 @@ export default async function handler(req, res) {
       return;
     }
 
-    const drive = getDrive();
+    const drive = getDrive(req);
     const folder = await ensureYearFolder(drive, year || currentYear());
     const existing = await listDonFiles(drive, folder.id, year);
     const clash = existing.find(
@@ -110,6 +110,7 @@ export default async function handler(req, res) {
     console.error(err);
     sendJson(res, err.statusCode || 500, {
       error: err.message || "Erreur lors de l’upload Drive",
+      code: err.code || undefined,
       parentFolderId: getParentFolderId(),
       build: DRIVE_BUILD,
     });

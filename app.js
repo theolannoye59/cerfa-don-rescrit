@@ -613,10 +613,16 @@ async function fetchNextReceiptNumber(year) {
   const qs = year ? `?year=${encodeURIComponent(year)}` : "";
   const res = await fetch(`/api/next-receipt${qs}`, {
     method: "GET",
+    credentials: "include",
     headers: authHeaders(),
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (body.code === "GOOGLE_NOT_CONNECTED" || res.status === 401) {
+      throw new Error(
+        body.error || "Connectez Google Drive avec un compte qui a les droits sur le dossier."
+      );
+    }
     throw new Error(body.error || `Impossible d’obtenir le n° de reçu (${res.status})`);
   }
   return body.receiptNumber;
@@ -625,6 +631,7 @@ async function fetchNextReceiptNumber(year) {
 async function uploadRescritToDrive(bytes, receiptNumber) {
   const res = await fetch("/api/upload-rescrit", {
     method: "POST",
+    credentials: "include",
     headers: authHeaders({
       "Content-Type": "application/pdf",
       "X-Receipt-Number": receiptNumber,
@@ -639,6 +646,81 @@ async function uploadRescritToDrive(bytes, receiptNumber) {
     throw err;
   }
   return body;
+}
+
+async function refreshGoogleStatus() {
+  const label = $("#google-label");
+  const connectBtn = $("#google-connect");
+  const disconnectBtn = $("#google-disconnect");
+  if (!label || !connectBtn || !disconnectBtn) return false;
+
+  try {
+    const res = await fetch("/api/auth/google/status", { credentials: "include" });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || "Statut Google indisponible");
+
+    if (body.connected) {
+      const who = body.email ? ` (${body.email})` : "";
+      label.textContent = `Drive connecté${who}`;
+      connectBtn.hidden = true;
+      disconnectBtn.hidden = false;
+      return true;
+    }
+
+    label.textContent = "Drive : non connecté";
+    connectBtn.hidden = false;
+    disconnectBtn.hidden = true;
+    return false;
+  } catch (err) {
+    console.error(err);
+    label.textContent = "Drive : statut inconnu";
+    connectBtn.hidden = false;
+    disconnectBtn.hidden = true;
+    return false;
+  }
+}
+
+function initGoogleDriveUi() {
+  const connectBtn = $("#google-connect");
+  const disconnectBtn = $("#google-disconnect");
+
+  connectBtn?.addEventListener("click", () => {
+    window.location.href = "/api/auth/google/start";
+  });
+
+  disconnectBtn?.addEventListener("click", async () => {
+    disconnectBtn.disabled = true;
+    try {
+      await fetch("/api/auth/google/logout", { method: "POST", credentials: "include" });
+      await refreshGoogleStatus();
+      setStatus("Compte Google Drive déconnecté.", "ok");
+    } catch (err) {
+      console.error(err);
+      setStatus("Impossible de déconnecter Google Drive.", "error");
+    } finally {
+      disconnectBtn.disabled = false;
+    }
+  });
+
+  const params = new URLSearchParams(window.location.search);
+  const googleFlag = params.get("google");
+  if (googleFlag === "connected") {
+    setStatus("Google Drive connecté — vous pouvez générer les reçus.", "ok");
+    params.delete("google");
+    const clean = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash || ""}`;
+    window.history.replaceState({}, "", clean);
+  } else if (googleFlag === "error") {
+    setStatus(
+      `Connexion Google échouée : ${params.get("reason") || "erreur inconnue"}`,
+      "error"
+    );
+    params.delete("google");
+    params.delete("reason");
+    const clean = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash || ""}`;
+    window.history.replaceState({}, "", clean);
+  }
+
+  refreshGoogleStatus();
 }
 
 async function allocateAndBuildPdf() {
@@ -680,6 +762,15 @@ form.addEventListener("submit", async (e) => {
   }
   if (!signatureHasInk) {
     setStatus("Ajoutez une signature dans le cadre avant de télécharger.", "error");
+    return;
+  }
+
+  const googleOk = await refreshGoogleStatus();
+  if (!googleOk) {
+    setStatus(
+      "Connectez d’abord Google Drive (bouton en haut) avec un compte qui a les droits sur le dossier.",
+      "error"
+    );
     return;
   }
 
@@ -726,6 +817,7 @@ form.addEventListener("submit", async (e) => {
 clearSignature();
 updateVisibility();
 syncAmountWords();
+initGoogleDriveUi();
 
 if (!form.elements.donationDate.value) form.elements.donationDate.value = todayISO();
 if (!form.elements.signatureDate.value) form.elements.signatureDate.value = todayISO();

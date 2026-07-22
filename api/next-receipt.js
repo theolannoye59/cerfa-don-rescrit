@@ -38,13 +38,14 @@ export default async function handler(req, res) {
       yearParam && /^\d{4}$/.test(String(yearParam))
         ? String(yearParam)
         : currentYear();
-    const drive = getDrive();
+    const drive = getDrive(req);
     const result = await nextReceiptNumber(drive, year);
     sendJson(res, 200, { ...result, parentFolderId, build: DRIVE_BUILD });
   } catch (err) {
     console.error(err);
     sendJson(res, err.statusCode || 500, {
       error: err.message || "Erreur lors du calcul du numéro",
+      code: err.code || undefined,
       parentFolderId: getParentFolderId(),
       build: DRIVE_BUILD,
     });

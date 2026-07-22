@@ -114,6 +114,26 @@ body:not(.is-authenticated) {
   margin: 0;
 }
 
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.google-drive-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.google-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
 .page {
   width: min(760px, 100%);
   margin: 0 auto;
