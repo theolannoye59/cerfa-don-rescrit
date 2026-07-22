@@ -9,7 +9,14 @@ import {
   uploadPdf,
   sendJson,
   readBody,
-} from "./_lib/drive.js";
+  getParentFolderId,
+} from "../lib/drive.js";
+
+void process.env.GOOGLE_CLIENT_ID;
+void process.env.GOOGLE_CLIENT_SECRET;
+void process.env.GOOGLE_REFRESH_TOKEN;
+void process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID;
+void process.env.AUTH_PASSWORD_HASH;
 
 export const config = {
   api: {
@@ -30,6 +37,7 @@ export default async function handler(req, res) {
 
   try {
     assertAuthorized(req);
+    getParentFolderId();
 
     const receiptNumber = String(req.headers["x-receipt-number"] || "").trim();
     if (!/^DON\d{7}$/i.test(receiptNumber)) {
@@ -51,7 +59,6 @@ export default async function handler(req, res) {
       sendJson(res, 400, { error: "PDF manquant" });
       return;
     }
-    // PDF magic bytes
     if (pdfBuffer.subarray(0, 4).toString() !== "%PDF") {
       sendJson(res, 400, { error: "Le corps de la requête n’est pas un PDF" });
       return;
@@ -71,7 +78,6 @@ export default async function handler(req, res) {
       return;
     }
 
-    // Garde-fou : le numéro envoyé doit être le prochain attendu (évite les trous / collisions)
     const expected = await nextReceiptNumber(drive, year);
     if (expected.receiptNumber.toUpperCase() !== receiptNumber.toUpperCase()) {
       sendJson(res, 409, {

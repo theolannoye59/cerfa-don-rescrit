@@ -4,7 +4,16 @@ import {
   nextReceiptNumber,
   currentYear,
   sendJson,
-} from "./_lib/drive.js";
+  getQuery,
+  getParentFolderId,
+} from "../lib/drive.js";
+
+// Références statiques pour que Vercel injecte bien ces env vars dans la function
+void process.env.GOOGLE_CLIENT_ID;
+void process.env.GOOGLE_CLIENT_SECRET;
+void process.env.GOOGLE_REFRESH_TOKEN;
+void process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID;
+void process.env.AUTH_PASSWORD_HASH;
 
 export default async function handler(req, res) {
   if (req.method === "OPTIONS") {
@@ -19,7 +28,11 @@ export default async function handler(req, res) {
 
   try {
     assertAuthorized(req);
-    const yearParam = req.query?.year;
+    // Valide tôt → message clair si l’ID parent est vide / invalide
+    getParentFolderId();
+
+    const query = getQuery(req);
+    const yearParam = query.year;
     const year =
       yearParam && /^\d{4}$/.test(String(yearParam))
         ? String(yearParam)
