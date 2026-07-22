@@ -16,19 +16,40 @@
       padding: 1.5rem;
       text-align: center;
     }
+    .box {
+      max-width: 28rem;
+    }
+    .warn {
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+      color: #6b5b3e;
+      line-height: 1.45;
+    }
   </style>
 </head>
 <body>
-  <p id="msg">Connexion Google en cours…</p>
+  <div class="box">
+    <p id="msg">Connexion Google en cours…</p>
+    <p class="warn" id="hint" hidden></p>
+  </div>
   <script>
     (function () {
       const params = new URLSearchParams(window.location.search);
       const ok = params.get("ok") !== "0";
       const error = params.get("error") || "";
       const msg = document.getElementById("msg");
-      msg.textContent = ok
-        ? "Google Drive connecté. Cette fenêtre va se fermer."
-        : `Connexion Google échouée${error ? " : " + error : ""}.`;
+      const hint = document.getElementById("hint");
+
+      if (ok) {
+        msg.textContent = "Google Drive connecté. Cette fenêtre va se fermer.";
+      } else {
+        msg.textContent = "Connexion Google échouée" + (error ? " : " + error : ".");
+        hint.hidden = false;
+        hint.innerHTML =
+          "Rappel : l’app est en <strong>mode test</strong> Google. " +
+          "Votre e-mail doit être ajouté comme utilisateur test dans la console Google Cloud, " +
+          "et sur l’écran d’avertissement choisissez « Paramètres avancés » puis « Accéder à l’application ».";
+      }
 
       const payload = { type: "cerfa-google-oauth", ok, error };
       try {
@@ -39,11 +60,10 @@
 
       setTimeout(function () {
         window.close();
-        // Si le navigateur bloque window.close(), laisser le message visible
         if (ok) {
           msg.textContent = "Google Drive connecté. Vous pouvez fermer cette fenêtre.";
         }
-      }, 400);
+      }, 500);
     })();
   </script>
 </body>

@@ -718,7 +718,20 @@ function connectGoogleViaPopup() {
 async function ensureGoogleConnected({ force } = {}) {
   if (force) await clearGoogleSession();
   if (!force && (await isGoogleConnected())) return true;
-  setStatus("Connexion Google Drive requise…");
+
+  const proceed = window.confirm(
+    "Connexion Google Drive (application en mode TEST)\n\n" +
+      "Google va afficher un avertissement « application non vérifiée » : c’est normal.\n\n" +
+      "1. Cliquez sur « Paramètres avancés » (ou Advanced)\n" +
+      "2. Puis « Accéder à Rescrit / Echo Symphonic (non sécurisé) »\n\n" +
+      "Votre compte Google doit être ajouté comme utilisateur de test dans Google Cloud.\n\n" +
+      "Continuer vers Google ?"
+  );
+  if (!proceed) {
+    throw new Error("Connexion Google annulée.");
+  }
+
+  setStatus("Ouverture de Google Drive (app de test)…");
   await connectGoogleViaPopup();
   if (!(await isGoogleConnected())) {
     throw new Error("Google Drive n’est pas connecté.");
