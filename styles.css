@@ -323,7 +323,40 @@ body:not(.is-authenticated) {
   flex-wrap: wrap;
   gap: 0.75rem;
   justify-content: flex-end;
+  align-items: flex-end;
   margin-top: 1.25rem;
+}
+
+.drive-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+}
+
+button.linkish {
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+button.linkish:hover {
+  color: var(--ink);
+  background: transparent;
+  transform: none;
+}
+
+.google-account-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: right;
 }
 
 button {
@@ -478,8 +511,16 @@ button.compact {
     flex-direction: column-reverse;
   }
 
-  .actions button {
+  .actions button:not(.linkish) {
     width: 100%;
+  }
+
+  .drive-actions {
+    width: 100%;
+  }
+
+  .google-account-hint {
+    text-align: left;
   }
 
   .hint {

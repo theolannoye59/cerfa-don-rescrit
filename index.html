@@ -326,7 +326,13 @@
 
       <div class="actions">
         <button type="button" class="ghost" id="download-only">Télécharger le PDF</button>
-        <button type="button" class="primary" id="save-drive">Enregistrer sur Drive</button>
+        <div class="drive-actions">
+          <button type="button" class="primary" id="save-drive">Enregistrer sur Drive</button>
+          <button type="button" class="linkish" id="switch-google-account">
+            Changer de compte Google
+          </button>
+          <p class="google-account-hint" id="google-account-hint" hidden></p>
+        </div>
       </div>
       <p class="hint" id="status" role="status"></p>
     </form>

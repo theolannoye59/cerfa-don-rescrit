@@ -649,13 +649,37 @@ async function uploadRescritToDrive(bytes, receiptNumber) {
   return body;
 }
 
-async function isGoogleConnected() {
+async function getGoogleStatus() {
   try {
     const res = await fetch("/api/auth/google/status", { credentials: "include" });
     const body = await res.json().catch(() => ({}));
-    return Boolean(res.ok && body.connected);
+    if (!res.ok) return { connected: false, email: null };
+    return {
+      connected: Boolean(body.connected),
+      email: body.email || null,
+    };
   } catch {
-    return false;
+    return { connected: false, email: null };
+  }
+}
+
+async function isGoogleConnected() {
+  return (await getGoogleStatus()).connected;
+}
+
+async function refreshGoogleAccountHint() {
+  const hint = $("#google-account-hint");
+  if (!hint) return;
+  const { connected, email } = await getGoogleStatus();
+  if (connected && email) {
+    hint.hidden = false;
+    hint.textContent = `Compte Drive : ${email}`;
+  } else if (connected) {
+    hint.hidden = false;
+    hint.textContent = "Compte Drive connecté";
+  } else {
+    hint.hidden = true;
+    hint.textContent = "";
   }
 }
 
@@ -663,6 +687,7 @@ async function clearGoogleSession() {
   try {
     await fetch("/api/auth/google/logout", { method: "POST", credentials: "include" });
   } catch (_) {}
+  await refreshGoogleAccountHint();
 }
 
 function connectGoogleViaPopup() {
@@ -718,11 +743,12 @@ function connectGoogleViaPopup() {
 async function ensureGoogleConnected({ force } = {}) {
   if (force) await clearGoogleSession();
   if (!force && (await isGoogleConnected())) return true;
-  setStatus("Connexion Google Drive…");
+  setStatus(force ? "Choix d’un autre compte Google…" : "Connexion Google Drive…");
   await connectGoogleViaPopup();
   if (!(await isGoogleConnected())) {
     throw new Error("Google Drive n’est pas connecté.");
   }
+  await refreshGoogleAccountHint();
   return true;
 }
 
@@ -765,12 +791,40 @@ async function withGoogleDrive(action) {
   }
 }
 
+async function handleSwitchGoogleAccount() {
+  const btn = $("#switch-google-account");
+  const saveBtn = $("#save-drive");
+  const downloadBtn = $("#download-only");
+  btn.disabled = true;
+  saveBtn.disabled = true;
+  downloadBtn.disabled = true;
+  try {
+    await ensureGoogleConnected({ force: true });
+    const { email } = await getGoogleStatus();
+    setStatus(
+      email
+        ? `Compte Google changé : ${email}. Vous pouvez enregistrer sur Drive.`
+        : "Compte Google changé. Vous pouvez enregistrer sur Drive.",
+      "ok"
+    );
+  } catch (err) {
+    console.error(err);
+    setStatus(err.message || "Impossible de changer de compte Google.", "error");
+  } finally {
+    btn.disabled = false;
+    saveBtn.disabled = false;
+    downloadBtn.disabled = false;
+  }
+}
+
 async function handleDownloadOnly() {
   if (!validateBeforeGenerate()) return;
   const btn = $("#download-only");
   const other = $("#save-drive");
+  const switchBtn = $("#switch-google-account");
   btn.disabled = true;
   other.disabled = true;
+  if (switchBtn) switchBtn.disabled = true;
   try {
     // Téléchargement local : pas besoin de Google ni de n° Drive.
     // N° provisoire local pour le PDF (le n° officiel est attribué à l’enregistrement Drive).
@@ -797,6 +851,7 @@ async function handleDownloadOnly() {
   } finally {
     btn.disabled = false;
     other.disabled = false;
+    if (switchBtn) switchBtn.disabled = false;
   }
 }
 
@@ -804,8 +859,10 @@ async function handleSaveDrive() {
   if (!validateBeforeGenerate()) return;
   const btn = $("#save-drive");
   const other = $("#download-only");
+  const switchBtn = $("#switch-google-account");
   btn.disabled = true;
   other.disabled = true;
+  if (switchBtn) switchBtn.disabled = true;
   try {
     await withGoogleDrive(async () => {
       let { receiptNumber, bytes } = await allocateAndBuildPdf();
@@ -816,6 +873,7 @@ async function handleSaveDrive() {
           `Enregistré sur Drive : ${uploaded.fileName || `${receiptNumber}.pdf`}`,
           "ok"
         );
+        await refreshGoogleAccountHint();
       } catch (uploadErr) {
         if (uploadErr.status === 409 && uploadErr.payload?.receiptNumber) {
           receiptNumber = uploadErr.payload.receiptNumber;
@@ -827,6 +885,7 @@ async function handleSaveDrive() {
             `Enregistré sur Drive après renumérotation : ${uploaded.fileName || receiptNumber}.pdf`,
             "ok"
           );
+          await refreshGoogleAccountHint();
         } else {
           throw uploadErr;
         }
@@ -838,6 +897,7 @@ async function handleSaveDrive() {
   } finally {
     btn.disabled = false;
     other.disabled = false;
+    if (switchBtn) switchBtn.disabled = false;
   }
 }
 
@@ -862,10 +922,12 @@ signatureCanvas.addEventListener("touchcancel", endSignature);
 form.addEventListener("submit", (e) => e.preventDefault());
 $("#download-only").addEventListener("click", handleDownloadOnly);
 $("#save-drive").addEventListener("click", handleSaveDrive);
+$("#switch-google-account").addEventListener("click", handleSwitchGoogleAccount);
 
 clearSignature();
 updateVisibility();
 syncAmountWords();
+refreshGoogleAccountHint();
 
 if (!form.elements.donationDate.value) form.elements.donationDate.value = todayISO();
 if (!form.elements.signatureDate.value) form.elements.signatureDate.value = todayISO();
