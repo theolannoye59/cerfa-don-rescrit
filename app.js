@@ -109,18 +109,36 @@ function formatDateFR(iso) {
   return `${d} / ${m} / ${y}`;
 }
 
+/** WinAnsi-safe text for StandardFonts (Helvetica). */
+function normalizePdfText(text) {
+  if (!text) return "";
+  return String(text)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\u0152/g, "OE")
+    .replace(/\u0153/g, "oe")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/[\u00a0\u202f\u2009\u2007\u2008\u2060]/g, " ")
+    .replace(/\u2026/g, "...");
+}
+
 function formatAmount(value) {
   const num = Number(value);
   if (Number.isNaN(num)) return "";
-  return num.toLocaleString("fr-FR", {
-    minimumFractionDigits: Number.isInteger(num) ? 0 : 2,
-    maximumFractionDigits: 2,
-  });
+  const sign = num < 0 ? "-" : "";
+  const abs = Math.abs(num);
+  const intPart = String(Math.trunc(abs));
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  if (Number.isInteger(num)) return `${sign}${grouped}`;
+  const cents = abs.toFixed(2).split(".")[1];
+  return `${sign}${grouped},${cents}`;
 }
 
 /** Fit object text on the 2 dotted lines, shrinking font if needed. */
 function fitObjectText(raw, font) {
-  const text = (raw || "").trim().replace(/\s+/g, " ");
+  const text = normalizePdfText(raw).trim().replace(/\s+/g, " ");
   if (!text) return { lines: [], size: 8 };
 
   const line1Max = 480; // from x≈72 to ≈552
@@ -157,10 +175,10 @@ function fitObjectText(raw, font) {
     } else break;
   }
   let line2 = words.slice(i).join(" ");
-  while (line2 && font.widthOfTextAtSize(`${line2}…`, size) > line2Max) {
+  while (line2 && font.widthOfTextAtSize(`${line2}...`, size) > line2Max) {
     line2 = line2.replace(/\s+\S+$/, "");
   }
-  return { lines: [line1, line2 ? `${line2}…` : ""], size };
+  return { lines: [line1, line2 ? `${line2}...` : ""], size };
 }
 
 /* Checkbox coordinates from template (top-left origin) */
@@ -353,22 +371,9 @@ async function fillPdf(data) {
 
   const ink = rgb(0, 0, 0);
 
-  const safe = (text) => {
-    if (!text) return "";
-    return String(text)
-      .replaceAll("œ", "oe")
-      .replaceAll("Œ", "OE")
-      .replaceAll("—", "-")
-      .replaceAll("–", "-")
-      .replaceAll("’", "'")
-      .replaceAll("‘", "'")
-      .replaceAll("“", '"')
-      .replaceAll("”", '"');
-  };
-
   // write(page, text, x, lineBottomYFromTop, size) — sits clearly above dotted lines
   const write = (page, text, x, lineBottomY, size = 10, bold = false) => {
-    const value = safe(text);
+    const value = normalizePdfText(text);
     if (!value) return;
     page.drawText(value, {
       x,
