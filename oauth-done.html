@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Google Drive — Echo Symphonic</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #f7f4ef;
+      color: #1c1b19;
+      padding: 1.5rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <p id="msg">Connexion Google en cours…</p>
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const ok = params.get("ok") !== "0";
+      const error = params.get("error") || "";
+      const msg = document.getElementById("msg");
+      msg.textContent = ok
+        ? "Google Drive connecté. Cette fenêtre va se fermer."
+        : `Connexion Google échouée${error ? " : " + error : ""}.`;
+
+      const payload = { type: "cerfa-google-oauth", ok, error };
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage(payload, window.location.origin);
+        }
+      } catch (_) {}
+
+      setTimeout(function () {
+        window.close();
+        // Si le navigateur bloque window.close(), laisser le message visible
+        if (ok) {
+          msg.textContent = "Google Drive connecté. Vous pouvez fermer cette fenêtre.";
+        }
+      }, 400);
+    })();
+  </script>
+</body>
+</html>

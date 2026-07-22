@@ -648,79 +648,75 @@ async function uploadRescritToDrive(bytes, receiptNumber) {
   return body;
 }
 
-async function refreshGoogleStatus() {
-  const label = $("#google-label");
-  const connectBtn = $("#google-connect");
-  const disconnectBtn = $("#google-disconnect");
-  if (!label || !connectBtn || !disconnectBtn) return false;
-
+async function isGoogleConnected() {
   try {
     const res = await fetch("/api/auth/google/status", { credentials: "include" });
     const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(body.error || "Statut Google indisponible");
-
-    if (body.connected) {
-      const who = body.email ? ` (${body.email})` : "";
-      label.textContent = `Drive connecté${who}`;
-      connectBtn.hidden = true;
-      disconnectBtn.hidden = false;
-      return true;
-    }
-
-    label.textContent = "Drive : non connecté";
-    connectBtn.hidden = false;
-    disconnectBtn.hidden = true;
-    return false;
-  } catch (err) {
-    console.error(err);
-    label.textContent = "Drive : statut inconnu";
-    connectBtn.hidden = false;
-    disconnectBtn.hidden = true;
+    return Boolean(res.ok && body.connected);
+  } catch {
     return false;
   }
 }
 
-function initGoogleDriveUi() {
-  const connectBtn = $("#google-connect");
-  const disconnectBtn = $("#google-disconnect");
-
-  connectBtn?.addEventListener("click", () => {
-    window.location.href = "/api/auth/google/start";
-  });
-
-  disconnectBtn?.addEventListener("click", async () => {
-    disconnectBtn.disabled = true;
-    try {
-      await fetch("/api/auth/google/logout", { method: "POST", credentials: "include" });
-      await refreshGoogleStatus();
-      setStatus("Compte Google Drive déconnecté.", "ok");
-    } catch (err) {
-      console.error(err);
-      setStatus("Impossible de déconnecter Google Drive.", "error");
-    } finally {
-      disconnectBtn.disabled = false;
-    }
-  });
-
-  const params = new URLSearchParams(window.location.search);
-  const googleFlag = params.get("google");
-  if (googleFlag === "connected") {
-    setStatus("Google Drive connecté — vous pouvez générer les reçus.", "ok");
-    params.delete("google");
-    const clean = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash || ""}`;
-    window.history.replaceState({}, "", clean);
-  } else if (googleFlag === "error") {
-    setStatus(
-      `Connexion Google échouée : ${params.get("reason") || "erreur inconnue"}`,
-      "error"
+function connectGoogleViaPopup() {
+  return new Promise((resolve, reject) => {
+    const width = 520;
+    const height = 680;
+    const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - width) / 2));
+    const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - height) / 2));
+    const popup = window.open(
+      "/api/auth/google/start",
+      "cerfa-google-oauth",
+      `popup=yes,width=${width},height=${height},left=${left},top=${top}`
     );
-    params.delete("google");
-    params.delete("reason");
-    const clean = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash || ""}`;
-    window.history.replaceState({}, "", clean);
-  }
 
-  refreshGoogleStatus();
+    if (!popup) {
+      reject(
+        new Error(
+          "Autorisez les fenêtres pop-up pour connecter Google Drive, puis relancez la génération."
+        )
+      );
+      return;
+    }
+
+    let settled = false;
+    const finish = (ok, error) => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener("message", onMessage);
+      clearInterval(poll);
+      try {
+        if (!popup.closed) popup.close();
+      } catch (_) {}
+      if (ok) resolve(true);
+      else reject(new Error(error || "Connexion Google annulée."));
+    };
+
+    const onMessage = (event) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "cerfa-google-oauth") return;
+      finish(Boolean(event.data.ok), event.data.error);
+    };
+
+    window.addEventListener("message", onMessage);
+
+    const poll = setInterval(async () => {
+      if (!popup.closed) return;
+      // L’utilisateur a fermé la popup : vérifier si le cookie est quand même posé
+      const ok = await isGoogleConnected();
+      finish(ok, ok ? null : "Connexion Google non terminée.");
+    }, 600);
+  });
+}
+
+async function ensureGoogleConnected() {
+  if (await isGoogleConnected()) return true;
+  setStatus("Connexion Google Drive requise…");
+  await connectGoogleViaPopup();
+  if (!(await isGoogleConnected())) {
+    throw new Error("Google Drive n’est pas connecté.");
+  }
+  return true;
 }
 
 async function allocateAndBuildPdf() {
@@ -765,19 +761,11 @@ form.addEventListener("submit", async (e) => {
     return;
   }
 
-  const googleOk = await refreshGoogleStatus();
-  if (!googleOk) {
-    setStatus(
-      "Connectez d’abord Google Drive (bouton en haut) avec un compte qui a les droits sur le dossier.",
-      "error"
-    );
-    return;
-  }
-
   const btn = $("#generate");
   btn.disabled = true;
 
   try {
+    await ensureGoogleConnected();
     let { receiptNumber, bytes } = await allocateAndBuildPdf();
 
     downloadBlob(bytes, `${receiptNumber}.pdf`);
@@ -817,7 +805,6 @@ form.addEventListener("submit", async (e) => {
 clearSignature();
 updateVisibility();
 syncAmountWords();
-initGoogleDriveUi();
 
 if (!form.elements.donationDate.value) form.elements.donationDate.value = todayISO();
 if (!form.elements.signatureDate.value) form.elements.signatureDate.value = todayISO();

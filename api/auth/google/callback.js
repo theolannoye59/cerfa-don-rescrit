@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       res.statusCode = 302;
       res.setHeader(
         "Location",
-        `${publicOrigin(req)}/?google=error&reason=${encodeURIComponent(query.error)}`
+        `${publicOrigin(req)}/oauth-done.html?ok=0&error=${encodeURIComponent(query.error)}`
       );
       res.end();
       return;
@@ -66,14 +66,14 @@ export default async function handler(req, res) {
     }
 
     res.statusCode = 302;
-    res.setHeader("Location", `${publicOrigin(req)}/?google=connected`);
+    res.setHeader("Location", `${publicOrigin(req)}/oauth-done.html?ok=1`);
     res.end();
   } catch (err) {
     console.error(err);
     res.statusCode = 302;
     res.setHeader(
       "Location",
-      `${publicOrigin(req)}/?google=error&reason=${encodeURIComponent(err.message || "oauth_failed")}`
+      `${publicOrigin(req)}/oauth-done.html?ok=0&error=${encodeURIComponent(err.message || "oauth_failed")}`
     );
     res.end();
   }
