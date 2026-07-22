@@ -10,7 +10,6 @@ import {
   sendJson,
   readBody,
   getParentFolderId,
-  assertParentFolderAccessible,
   DRIVE_BUILD,
 } from "../lib/drive.js";
 
@@ -18,6 +17,7 @@ void process.env.GOOGLE_CLIENT_ID;
 void process.env.GOOGLE_CLIENT_SECRET;
 void process.env.GOOGLE_REFRESH_TOKEN;
 void process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID;
+void process.env.GOOGLE_DRIVE_YEAR_FOLDER_ID;
 void process.env.AUTH_PASSWORD_HASH;
 
 export const config = {
@@ -67,7 +67,6 @@ export default async function handler(req, res) {
     }
 
     const drive = getDrive();
-    await assertParentFolderAccessible(drive);
     const folder = await ensureYearFolder(drive, year || currentYear());
     const existing = await listDonFiles(drive, folder.id, year);
     const clash = existing.find(
@@ -100,6 +99,7 @@ export default async function handler(req, res) {
       ok: true,
       receiptNumber: receiptNumber.toUpperCase(),
       year,
+      folderId: folder.id,
       fileId: file.id,
       fileName: file.name,
       webViewLink: file.webViewLink || null,

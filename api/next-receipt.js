@@ -14,6 +14,7 @@ void process.env.GOOGLE_CLIENT_ID;
 void process.env.GOOGLE_CLIENT_SECRET;
 void process.env.GOOGLE_REFRESH_TOKEN;
 void process.env.GOOGLE_DRIVE_PARENT_FOLDER_ID;
+void process.env.GOOGLE_DRIVE_YEAR_FOLDER_ID;
 void process.env.AUTH_PASSWORD_HASH;
 
 export default async function handler(req, res) {
